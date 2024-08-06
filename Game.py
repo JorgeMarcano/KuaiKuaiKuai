@@ -1,5 +1,63 @@
 import random
-import Table as T
+from Table import Table
+
+class Game():
+    def __init__(self):
+        self.__table = Table()
+        self.__player = -1
+        self.__turn = -1
+
+    def connect(self, address, port):
+        pass
+
+    def play(self):
+        pass
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 
 class Game:
     def __init__(self, isHost=None):

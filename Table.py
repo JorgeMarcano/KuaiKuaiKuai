@@ -10,7 +10,7 @@ class Card:
     def __init__(self, value, suit, cardImage=None):
         self.__value = value
         self.__suit = suit
-        
+
         self.__cardImage = cardImage
         if cardImage == None:
             ImageTk.PhotoImage(Image.open("cardset-standard/"+value+suit+".gif"))
@@ -31,25 +31,8 @@ class Card:
     def sv(self):
         return (self.__value, self.__suit)
 
-    @staticmethod
-    def fresh_deck():
-        cards = []
-        for v in Card.__values:
-            for s in Card.__suits:
-                # Only 3 Aces
-                if (v == "01" and s == "c"):
-                    continue
-                # Onlye one 2
-                if (v == "02" and s != "h"):
-                    continue
-
-                cards.append(Card(v, s))
-
-        random.shuffle(cards)
-        return cards
-
     def __eq__(self, other):
-        return ((self.__suit == other.suit()) and (self.__value == other.value()))
+        return ((self.__suit == other.suit) and (self.__value == other.value))
 
 class Pile:
     def __init__(self, cards=None, visible=None):
@@ -64,7 +47,10 @@ class Pile:
             if not (card in self.__cards):
                 self.__cards.append(card)
 
-    def remove_cards(self, cards):
+    def remove_cards(self, cards=None):
+        if cards == None:
+            self.__cards = []
+
         for card in cards:
             if not (card is Card):
                 raise Exception
@@ -103,41 +89,46 @@ class Table:
         self.__player_hands = [Pile() for i in range(3)]
         self.__player_played = [Pile() for i in range(3)]
         self.__discard = Pile()
-        self.__deck = []
+        self.__deck = {}
 
-    def new(self, deck=None):
-        self.__deck = deck if deck != None else Card.fresh_deck()
+        for v in Card.__values:
+            for s in Card.__suits:
+                # Only 3 Aces
+                if (v == "01" and s == "c"):
+                    continue
+                # Only one 2
+                if (v == "02" and s != "h"):
+                    continue
 
-        for index, player in enumerate(self.__player_piles):
-            player.add_cards(deck[index::3])
+                self.__deck[(v, s)] = Card(v, s) 
 
-    def load(self, deck_list):
-        deck = []
-        for (v, s) in deck_list:
-            deck.append(Card(v, s))
+    def find_card(self, value, suit):
+        try:
+            return self.__deck[(value, suit)]
+        except KeyError:
+            return None
 
-        self.new(deck)
+    def play_cards(self, player, cards):
+        if player > 2:
+            return
 
-    def compile(self):
-        deck_list = []
+        card_list = [self.find_card(value, suit) for (value, suit) in cards]
+        self.__player_hands[player].remove_cards(card_list)
+        self.__player_played[player].add_cards(card_list)
 
-        for card in self.__deck:
-            deck_list.append(card.sv)
+    def discard(self, player):
+        if player > 2:
+            return
 
-        return deck_list
+        self.__discard.add_cards(self.__player_played[player].cards)
+        self.__player_played[player].remove_cards()
 
-    @staticmethod
-    def export_pile(pile_list):
-        outputStr = ",".join([f"{i}-{j}" for i, j in pile_list])
-        return f"S:{outputStr}:E"
+    def deal(self, cards):
+        # cards are listed as such, [1,2,3,1,2,3,1,2,3,...]
 
-    @staticmethod
-    def import_pile(sentence):
-        sections = sentence.split(":")
-        if len(sections) != 3 or sections[-1] != "E" or sections[0] != "S":
-            raise Exception
-
-        card_list = sections[1].split(",")
-        card_list = [card.split("-") for card in card_list]
-        
-        return [(i, j) for i, j in card_list]
+        card_list = [self.find_card(value, suit) for (value, suit) in cards]
+        self.__discard.remove_cards()
+        for i in range(3):
+            self.__player_hands[i].remove_cards()
+            self.__player_played[i].remove_cards()
+            self.__player_hands[i].add_cards(card_list[i::3])
