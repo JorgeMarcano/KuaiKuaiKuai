@@ -9,8 +9,9 @@ class Card:
 
     def __init__(self, value, suit, cardImage=None):
         self.__value = value
-        self.__cardImage = cardImage
         self.__suit = suit
+        
+        self.__cardImage = cardImage
         if cardImage == None:
             ImageTk.PhotoImage(Image.open("cardset-standard/"+value+suit+".gif"))
 
@@ -19,7 +20,7 @@ class Card:
         return self.__value
 
     @property
-    def value(self):
+    def suit(self):
         return self.__suit
 
     @property
@@ -46,6 +47,9 @@ class Card:
 
         random.shuffle(cards)
         return cards
+
+    def __eq__(self, other):
+        return ((self.__suit == other.suit()) and (self.__value == other.value()))
 
 class Pile:
     def __init__(self, cards=None, visible=None):
@@ -124,7 +128,7 @@ class Table:
 
     @staticmethod
     def export_pile(pile_list):
-        outputStr = ",".join([f"{i}-{j}" for i, j in deck_list])
+        outputStr = ",".join([f"{i}-{j}" for i, j in pile_list])
         return f"S:{outputStr}:E"
 
     @staticmethod
