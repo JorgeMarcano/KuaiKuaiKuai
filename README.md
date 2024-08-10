@@ -10,5 +10,5 @@ Contains the mechanics of the game, in an abstract way, allowing for connecting 
 ## main.py
 Contains the main GUI and code
 
-## Comm.py
-Contains the host/client logic for sending data between them.
+## Host.py + Client.py
+Contains the host/client logic for sending data between them. Run them both in separate instances and follow the instructions in terminal to test their functionality.
