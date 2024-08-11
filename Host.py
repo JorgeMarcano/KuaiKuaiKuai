@@ -130,7 +130,7 @@ class Host:
 
 server = Host(HOST, HOST_PORT)
 
-logging.info("Server is active! Type \"end\" to Deactivate server...")
+print("Server is active! Type \"end\" to Deactivate server...")
 
 while True:
     user_input = input()
