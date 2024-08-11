@@ -36,8 +36,6 @@ class Client:
             self.__socket.connect((host, port))
             logging.info(f"Connected to {self.__socket.getsockname()[0]}")
 
-            # self.__socket.setblocking(False)
-
             # Listen for server activity on another thread
             self.__thread = threading.Thread(target=self.daemon, daemon=True)
             self.__thread.start()
@@ -50,6 +48,13 @@ class Client:
             raise e
 
     def close(self):
+        # Stop daemon thread
+        self.__stop_event.set()
+        self.__thread.join()
+
+        self.close_socket()
+
+    def close_socket(self):
         try:
             self.__socket.shutdown(socket.SHUT_RDWR)
             self.__socket.close()
@@ -59,10 +64,6 @@ class Client:
         finally:
             self.__socket = None
             logging.info("Client socket has been closed")
-
-    def stop_daemon(self):
-        self.__stop_event.set()
-        self.__thread.join()
 
     def daemon(self):
         self.__socket.setblocking(False)
@@ -92,7 +93,7 @@ class Client:
 
         # Server has closed the connection, close client-side connection
         logging.info(f"Closing connection due to server disconnect")
-        self.close()
+        self.close_socket()
 
     def send(self, message):
         self.__socket.sendall(message)
@@ -106,6 +107,12 @@ class Client:
     def read_buffer(self):
         self.__buffer_full = False
         return self.__buffer.decode()
+
+#################
+# Sample Client #
+#################
+
+import msvcrt # used to check is sys.stdin has pending inputs
 
 ####################
 # Helper Functions #
@@ -131,26 +138,35 @@ def get_host_IP_from_user():
 def sample_callback(client):
     print(f"Callback Output: {client.read_buffer()[::-1]}")
 
-#################
-# Sample Client #
-#################
+#############
+# Main loop #
+#############
 
-# Establish connection with server
 while True:
-    host = get_host_IP_from_user()
-    client = Client(host, HOST_PORT, sample_callback)
+    # Establish connection with server
+    while True:
+        host = get_host_IP_from_user()
+        client = Client(host, HOST_PORT, sample_callback)
 
-    if client.is_connected():
+        if client.is_connected():
+            break
+
+    # Run Client
+    print(f"Type messages and press enter to send them to the server (type \"end\" to close client)")
+    while True:
+
+        # Read user input if available
+        if msvcrt.kbhit():
+            user_input = input()
+            if user_input == "end" or not client.is_connected():
+                client.close()
+                break
+
+            client.send(str.encode(user_input))
+
+        # Exit if the server was closed
+        if not client.is_connected():
+            break
+
+    if input("Reconnect to server? (y/n): ").lower() == 'n':
         break
-
-# Run Client
-logging.info(f"Type messages and press enter to send them to the server (type \"end\" to close client)")
-while True:
-    user_input = input()
-    if user_input == "end" or not client.is_connected():
-        break
-
-    client.send(str.encode(user_input))
-
-client.stop_daemon()
-client.close()
