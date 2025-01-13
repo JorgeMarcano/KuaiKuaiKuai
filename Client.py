@@ -3,6 +3,9 @@ import logging
 import select
 import socket
 import threading
+import tkinter as tk
+from tkinter import messagebox
+import tkinter.scrolledtext as st
 
 ####################
 # Global Variables #
@@ -112,61 +115,112 @@ class Client:
 # Sample Client #
 #################
 
-import msvcrt # used to check is sys.stdin has pending inputs
+class ClientGUI(tk.Tk):
+    def __init__(self):
+        super().__init__()
+        self.title("Client GUI")
+        self.protocol("WM_DELETE_WINDOW", self.on_close)
 
-####################
-# Helper Functions #
-####################
+        self.client = None
+        self.host_port = 65432  # Default port
 
-# Get Server IP using console
-def get_host_IP_from_user():
-    host = None
-    while host == None:  
+        self.create_widgets()
+
+    def create_widgets(self):
+
+        # Configure grid layout
+        self.columnconfigure(2, weight=5)  # Allow third column to grow
+        self.rowconfigure(2, weight=1)     # Allow third row to grow
+
+        # Server IP input
+        self.ip_label = tk.Label(self, text="Server IP:")
+        self.ip_label.grid(row=0, column=0, sticky="e", padx=5, pady=5)
+
+        self.ip_entry = tk.Entry(self, width=40)
+        self.ip_entry.grid(row=0, column=1, sticky="w", padx=5, pady=5)
+
+        self.connect_button = tk.Button(self, text="Connect", command=self.connect_to_server)
+        self.connect_button.grid(row=0, column=2, sticky="w", padx=5, pady=5)
+
+        # Message input
+        self.message_entry = tk.Entry(self, width=40)
+        self.message_entry.grid(row=1, column=1, sticky="w", padx=5, pady=5)
+
+        self.send_button = tk.Button(self, text="Send", command=self.send_message, state="disabled")
+        self.send_button.grid(row=1, column=2, sticky="w", padx=5, pady=5)
+
+        # Output display
+        self.output_text = st.ScrolledText(self)
+        self.output_text.grid(row=2, column=0, columnspan=3, sticky="nsew", padx=10, pady=10)
+
+        # Disconnect button
+        self.disconnect_button = tk.Button(self, text="Disconnect", command=self.disconnect, state="disabled")
+        self.disconnect_button.grid(row=3, column=0, columnspan=3, padx=5, pady=5)
+
+    def connect_to_server(self):
+        host = self.ip_entry.get()
+        if not host:
+            messagebox.showerror("Error", "Please enter the server IP.")
+            return
+        
         try:
-            host = input("Enter server IP:")
+            # Validate the IP address
             ipaddress.ip_address(host)
         except ValueError:
-            logging.error('address/netmask is invalid: %s' % host)
-            host = None
-        except:
-            logging.error('Usage : %s  ip' % host)
-            host = None
-    
-    return host
+            messagebox.showerror("Error", "Invalid IP address format. Please enter a valid IP.")
+            return
 
-# Simple callback that prints the data received from the server in reverse
-def sample_callback(client):
-    print(f"Callback Output: {client.read_buffer()[::-1]}")
+        try:
+            self.client = Client(host, self.host_port, self.message_callback)
+            if self.client.is_connected():
+                self.log_message("Connected to server.")
+                self.enable_controls(True)
+        except Exception as e:
+            messagebox.showerror("Connection Error", str(e))
 
-#############
-# Main loop #
-#############
+    def message_callback(self, client):
+        # Callback to process received data from the server.
+        data = client.read_buffer()
+        self.log_message(f"Server: {data}")
 
-while True:
-    # Establish connection with server
-    while True:
-        host = get_host_IP_from_user()
-        client = Client(host, HOST_PORT, sample_callback)
+    def send_message(self):
+        if self.client and self.client.is_connected():
+            message = self.message_entry.get()
+            if message:
+                if message.lower() == "end":
+                    self.disconnect()
+                    return
+                self.client.send(str.encode(message))
+                self.message_entry.delete(0, tk.END)
+        else:
+            messagebox.showwarning("Not Connected", "Connect to the server first.")
 
-        if client.is_connected():
-            break
+    def disconnect(self):
+        if self.client:
+            self.client.close()
+            self.log_message("Disconnected from server.")
+            self.enable_controls(False)
 
-    # Run Client
-    print(f"Type messages and press enter to send them to the server (type \"end\" to close client)")
-    while True:
+    def log_message(self, message):
+        self.output_text.configure(state="normal")
+        self.output_text.insert(tk.END, message + "\n")
+        self.output_text.configure(state="disabled")
 
-        # Read user input if available
-        if msvcrt.kbhit():
-            user_input = input()
-            if user_input == "end" or not client.is_connected():
-                client.close()
-                break
+    def enable_controls(self, connected):
+        # Enable or disable controls based on the connection status.
+        state = "normal" if connected else "disabled"
+        self.send_button.configure(state=state)
+        self.disconnect_button.configure(state=state)
+        self.connect_button.configure(state="disabled" if connected else "normal")
+        self.message_entry.configure(state=state)
 
-            client.send(str.encode(user_input))
+    def on_close(self):
+        if self.client:
+            self.client.close()
+        self.destroy()
 
-        # Exit if the server was closed
-        if not client.is_connected():
-            break
 
-    if input("Reconnect to server? (y/n): ").lower() == 'n':
-        break
+if __name__ == "__main__":
+    app = ClientGUI()
+    app.mainloop()
+
