@@ -1,15 +1,15 @@
-import random
-import time
-from tkinter import *
 from PIL import Image, ImageTk
 
 class Card:
-    __values = ("01", "02", "03", "04", "05", "06", "07", "08", "09", "10", "11", "12", "13")
-    __suits = ("c", "s", "d", "h")
+    values = ("01", "02", "03", "04", "05", "06", "07", "08", "09", "10", "11", "12", "13")
+    suits = ("c", "s", "d", "h")
 
-    def __init__(self, value, suit, cardImage=None):
+    def __init__(self, value, suit, x, y, cardImage=None):
         self.__value = value
         self.__suit = suit
+
+        self.__x = x
+        self.__y = y
 
         self.__cardImage = cardImage
         if cardImage == None:
@@ -24,15 +24,31 @@ class Card:
         return self.__suit
 
     @property
-    def cardImage(self):
+    def card_image(self):
         return self.__cardImage
 
     @property
     def sv(self):
         return (self.__value, self.__suit)
 
+    @property
+    def coord(self):
+        return (self.__x, self.__y)
+
+    @coord.setter
+    def coord(self, coords):
+        self.__x, self.__y = coords
+
     def __eq__(self, other):
         return ((self.__suit == other.suit) and (self.__value == other.value))
+
+    def __lt__(self, other):
+        if (self.value < other.value):
+            return True
+        if (self.value > other.value):
+            return False
+        
+        return (self.__suit < other.suit)
 
 class Pile:
     def __init__(self, cards=None, visible=None):
@@ -59,6 +75,18 @@ class Pile:
                 raise Exception
 
             self.__cards.remove(card)
+
+    def order_cards(self, startX, startY, deltaX, deltaY):
+        #cards should be ordered by number first and suit second
+        self.__cards.sort()
+        self.__cards.reverse()
+        x = startX
+        y = startY
+
+        for card in self.__cards:
+            card.coord = (x, y)
+            x += deltaX
+            y += deltaY
 
     @property
     def cards(self):
@@ -91,8 +119,8 @@ class Table:
         self.__discard = Pile()
         self.__deck = {}
 
-        for v in Card.__values:
-            for s in Card.__suits:
+        for v in Card.values:
+            for s in Card.suits:
                 # Only 3 Aces
                 if (v == "01" and s == "c"):
                     continue
@@ -100,7 +128,7 @@ class Table:
                 if (v == "02" and s != "h"):
                     continue
 
-                self.__deck[(v, s)] = Card(v, s) 
+                self.__deck[(v, s)] = Card(v, s, 0, 0)
 
     def find_card(self, value, suit):
         try:
@@ -132,3 +160,6 @@ class Table:
             self.__player_hands[i].remove_cards()
             self.__player_played[i].remove_cards()
             self.__player_hands[i].add_cards(card_list[i::3])
+
+    def get_coords(self):
+        return [card.coord for card in self.__deck]

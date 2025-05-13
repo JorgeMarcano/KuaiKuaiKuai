@@ -1,24 +1,63 @@
 import random
 from Table import Table
+import tkinter as tk
+import tkinter.ttk as ttk
+from Client import Client
 
-class Game():
+class Game(tk.Tk):
     def __init__(self):
+        super().__init__()
+        
         self.__table = Table()
         self.__player = -1
         self.__turn = -1
 
-    def connect(self, address, port):
+        self.height = 700
+        self.width = 1000
+
+        self.geometry(f"{self.width}x{self.height}")
+        # set minimum window size value
+        self.minsize(self.width, self.height)
+        # set maximum window size value
+        self.maxsize(self.width, self.height)
+
+        self.createStartMenu()
+
+    def createStartMenu(self):
+        self.menuFrame = ttk.Frame(self)
+        self.startButton = ttk.Button(self.menuFrame, text="Connect", command=self.connect)
+        self.ipStr = tk.StringVar()
+        self.IPEntry = ttk.Entry(self.menuFrame, textvariable=self.ipStr)
+        ttk.Label(self.menuFrame, text="IP: ").grid(row=0,column=0)
+        self.IPEntry.grid(row=0,column=1)
+        self.startButton.grid(row=1, column=1, columnspan=2)
+        self.menuFrame.place(x=self.width/2, y=self.height/2, anchor="center")
+
+    def connect(self):
+        ipStr = self.ipStr.get()
+        if len(ipStr) == 0:
+            return
+
+        self.client = Client(ipStr, 69420, self.serverMsg)
+
+        #destroy the start menu
+        self.menuFrame.destroy()
+
+    def serverMsg(self):
         pass
 
     def play(self):
         pass
 
 
+if __name__ == "__main__":
+    game = Game()
+    game.mainloop()
 
 
 
 
-
+'''
 
 
 
@@ -346,7 +385,7 @@ class Reader:
         Label(frame, text="당신의 점수는 " + str(total_score) + "점 입니다.").grid(row=0,column=1,padx=50,pady=3)
         Button(frame, command = quit, text="OK!").grid(row=1, column=1,padx=10,pady=3)
         frame.pack(pady=280)
-
+# (: hehe
 
 def main():
     root = Tk()
@@ -357,3 +396,4 @@ def main():
     root.mainloop()
 
 main()
+'''
