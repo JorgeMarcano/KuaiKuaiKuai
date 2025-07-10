@@ -52,6 +52,7 @@ class Host:
 
         # Start player handlers
         for i in range(PLAYER_CAPACITY):
+            print(i)
             self.open_connection(i)
 
     def open_connection(self, index):
@@ -65,13 +66,12 @@ class Host:
             self.__conns[index] = None
             self.__active_conns -= 1
             self.__active_conns_str.set(self.__active_conns)
-            logging.info(f"Disconnected from player {index + 1}")
+            logging.info(f"Disconnected from player {index}")
             logging.info(f"Connected to {self.__active_conns}/{PLAYER_CAPACITY} Players")
         except:
             logging.warning("Closing a connection failed")
 
     def close(self):
-
         # Close all open threads
         for i in range(PLAYER_CAPACITY):
             if self.__conns[i] is not None:
@@ -91,13 +91,13 @@ class Host:
 
     def daemon(self, index):
         # Establish connection with client
-        logging.info(f"Attempting connection for player {index + 1}")
+        logging.info(f"Attempting connection for player {index}")
         self.__conns[index], self.__addrs[index] = self.__socket.accept()
         self.__active_conns += 1
         self.__active_conns_str.set(self.__active_conns)
         self.__conns[index].setblocking(False)
 
-        logging.info(f"Connected to {self.__addrs[index][0]}:{str(self.__addrs[index][1])} as player {index + 1}")
+        logging.info(f"Connected to {self.__addrs[index][0]}:{str(self.__addrs[index][1])} as player {index}")
         logging.info(f"Connected to {self.__active_conns}/{PLAYER_CAPACITY} Players")
 
         # Notify the client who they are
