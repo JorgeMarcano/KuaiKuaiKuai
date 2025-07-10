@@ -1,5 +1,6 @@
-from random
+import random
 import logging
+from PIL import Image, ImageTk
 
 list_of_suits = ["c", "s", "d", "h"]
 list_of_values = ["01", "02", "03", "04", "05", "06", "07", "08", "09", "10", "11", "12", "13"]
@@ -8,6 +9,15 @@ list_of_cards = []
 for suit in list_of_suits:
     for value in list_of_values:
         list_of_cards.append(value+suit)
+
+def load_images():
+    images = {}
+    for card in list_of_cards:
+        images[card] = ImageTk.PhotoImage(Image.open("cardset-standard/"+card+".gif"))
+
+    images["back"] = ImageTk.PhotoImage(Image.open("cardset-standard/back192.gif"))
+
+    return images
 
 class Game():
     def __init__(self, player_nb):
@@ -23,7 +33,7 @@ class Game():
 
     def initialize(self):
         # Choose a random player
-        self.current_player = random.randint(3)
+        self.current_player = random.randint(0, 2)
 
         # Randomly shuffle the deck
         self.deck_pile = list_of_cards[:]
@@ -35,24 +45,24 @@ class Game():
 
         # Deal out the cards
         for player in range(3):
-            self.player_piles[i] = self.deck_pile[:17]
+            self.player_piles[player] = self.deck_pile[:17]
             self.deck_pile = self.deck_pile[17:]
 
     def pack_game(self):
         pack = ""
 
         # Start with current player
-        pack += str(current_player) + ";"
+        pack += str(self.current_player) + ";"
         # Add cards in deck
         pack += ",".join(self.deck_pile) + ";"
         # Add cards in discard
         pack += ",".join(self.discard_pile) + ";"
         # Add players hands
-        pack += ";".join([",".join(i)] for i in self.player_piles)
+        pack += ";".join([",".join(i) for i in self.player_piles])
 
         return pack
 
-    def unpack_game(self, game):
+    def unpack_game(self, pack):
         # Reverse of pack
         piles = pack.split(";")
 
@@ -96,7 +106,17 @@ class Game():
         for card in cards:
             self.player_piles[player].remove(card)
 
+        self.current_player += 1
+        self.current_player %= 3
+
         return True
+
+    def pack_play(self, player, cards):
+        pack = ""
+        pack += str(player) + ";"
+        pack += ",".join(cards)
+
+        return pack
 
     def give_player_state(self, player):
         state = {}

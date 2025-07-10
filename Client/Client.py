@@ -1,6 +1,9 @@
 import socket
 import threading
 import logging
+import select
+
+BUFFER_SIZE = 1024
 
 class Client:
     def __init__(self, host, port, callback = None):
@@ -77,7 +80,7 @@ class Client:
         self.close_socket()
 
     def send(self, message):
-        self.__socket.sendall(message)
+        self.__socket.sendall(str.encode(message))
 
     def is_connected(self):
         return self.__socket and self.__socket.fileno() != -1
