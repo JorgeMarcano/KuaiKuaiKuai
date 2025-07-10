@@ -9,16 +9,21 @@ HOST_PORT = 65432
 
 class Backend():
     def __init__(self, server_ip, update_ui, on_start):
-        self.player_nb = -1
+        self.player_nb = -1 # Currently no number
+
+        # Callback for when there is UI to update
         self.update_ui = update_ui
+        # Callback for when there is a new connection
+        self.on_start = on_start
+
+        # Make new Game state instance (with no player nb yet)
+        self.game = GameState.Game(-1)
+
         # Connect to server
         self.client = Client.Client(server_ip, HOST_PORT, self.server_event)
 
-        self.on_start = on_start
-
-        self.game = GameState.Game(-1)
-
     def is_connected(self):
+        # Feedthrough the client's
         return self.client.is_connected()
 
     def play_hand(self, cards):
@@ -28,9 +33,10 @@ class Backend():
             self.client.send(self.game.pack_play(self.player_nb, cards))
 
     def server_event(self):
-        # Sends play from server to UI, saved in buffer TODO
+        # Sends play from server to UI, saved in buffer
         message = self.client.read_buffer()
 
+        # First part is the key, specifying what command was sent
         unpack = message.split(";")
         if len(unpack) < 2:
             logging.error("Message from Server invalid")
@@ -42,11 +48,11 @@ class Backend():
         try:
             key = int(key)
 
-            # If key is between 0 and 2 inclusive, it is a play
+            # If key is between 0 and 2 inclusive, it is a play by that player
             if key >= 0 and key <= 2:
                 cards = unpack[1].split(",")
                 self.game.do_play(key, cards)
-                # TODO: Raise update UI event!
+                # Raise update UI event!
                 is_update = True
 
             # If key is -1, it is an error
@@ -56,7 +62,7 @@ class Backend():
             # If key is 10, it is a new deal
             elif key == 10:
                 self.game.unpack_game(";".join(unpack[1:]))
-                # TODO: Raise update UI event!
+                # Raise update UI event!
                 is_update = True
 
             # If key is 11, it is a win event
@@ -66,10 +72,12 @@ class Backend():
 
             # If key is 12, it is identifier
             elif key == 12:
+                # Save the player nb
                 self.player_nb = int(unpack[1])
                 self.game.player_nb = self.player_nb
                 logging.info(f"You are player {self.player_nb}")
                 print(f"You are player {self.player_nb}")
+                # Raise a new Connection event!
                 is_on_start = True
 
             # Invalid Key
@@ -80,6 +88,7 @@ class Backend():
             logging.error(f"Event Key invalid from server: {key}")
             raise e
 
+        # If any event was raised, send to UI
         if is_on_start:
             self.on_start(self.player_nb)
         if is_update:
