@@ -85,14 +85,21 @@ class UI(tk.Tk):
         self.servermenu.add_command(label="Exit", command=self.on_close)
         self.menubar.add_cascade(label="Game", menu=self.servermenu)
 
-        self.servermenu = tk.Menu(self.menubar, tearoff=0)
-        self.servermenu.add_command(label="Set Alias", command=self.set_alias)
-        self.menubar.add_cascade(label="Setting", menu=self.servermenu)
+        self.viewmenu = tk.Menu(self.menubar, tearoff=0)
+        self.viewmenu.add_command(label="Set Alias", command=self.set_alias)
+        self.menubar.add_cascade(label="View", menu=self.viewmenu)
+
+        self.settingmenu = tk.Menu(self.menubar, tearoff=0)
+        self.settingmenu.add_command(label="Sort by Number", command=lambda: self.sort_cards("number"))
+        self.settingmenu.add_command(label="Sort by Suit", command=lambda: self.sort_cards("suit"))
+        self.menubar.add_cascade(label="Setting", menu=self.settingmenu)
 
         self.config(menu=self.menubar)
 
         self.children_widgets.append(self.menubar)
         self.children_widgets.append(self.servermenu)
+        self.children_widgets.append(self.settingmenu)
+        self.children_widgets.append(self.viewmenu)
 
     def ui_load_table(self, player_nb):
         # Change title
@@ -151,10 +158,13 @@ class UI(tk.Tk):
             if onclick != None:
                 temp.bind("<Button-1>", lambda e, card=card: onclick(e, card))
 
+            if card in self.selected_cards:
+                widget.config(highlightthickness=4)
+                widget.place(y=0)
 
         count_str.set(str(len(hand)))
 
-    def ui_update(self, state):
+    def ui_update(self, state, force=False):
         # Update the number of ocards of the other people
         self.game_build_hand(["back"] * state["others"][0], self.hands["A"][0], self.hands["A"][1])
         self.game_build_hand(["back"] * state["others"][1], self.hands["B"][0], self.hands["B"][1])
@@ -162,7 +172,7 @@ class UI(tk.Tk):
         # Update Last Play
         self.game_build_hand(state["last_play"], self.hands["Last"][0], self.hands["Last"][1])
 
-        if self.state == None:
+        if self.state == None or force:
             # Update whole screen
             self.state = state
             # Update hand
@@ -183,7 +193,6 @@ class UI(tk.Tk):
                 self.game_build_hand(state["hand"], self.hands["Mine"][0], self.hands["Mine"][1], onclick=self.on_card_click)
 
         # If it is our turn, enable button
-        print(self.state["current_player"])
         if self.state["current_player"] == self.backend.player_nb:
             self.play_btn.config(state="normal")
         else:
@@ -216,6 +225,16 @@ class UI(tk.Tk):
             widget.place(y=0)
 
             self.selected_cards.append(card)
+
+    def sort_cards(self, type):
+        if type == "number":
+            print(self.state["hand"])
+            self.state["hand"].sort()
+
+        elif type == "suit":
+            pass
+
+        self.ui_update(self.state)
 
     def play_selected(self):
         self.backend.play_hand(self.selected_cards)

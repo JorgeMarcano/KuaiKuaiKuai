@@ -124,6 +124,7 @@ class Game():
         state = {}
 
         state["hand"] = self.player_piles[player][:]
+        state["hand"].sort()
 
         state["others"] = []
         for i in range(3):
