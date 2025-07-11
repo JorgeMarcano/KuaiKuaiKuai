@@ -31,6 +31,8 @@ class Game():
 
         self.player_piles = [[] for i in range(3)]
 
+        self.player_alias = [f"Player {i}" for i in range(3)]
+
     def initialize(self):
         # Choose a random player
         self.current_player = random.randint(0, 2)
@@ -70,7 +72,7 @@ class Game():
             logging.error("Invalid packing!")
             return
 
-        self.current_player = piles[0]
+        self.current_player = int(piles[0])
         self.deck_pile = piles[1].split(',')
         self.discard_pile = piles[2].split(',')
         for i in range(3):
@@ -131,4 +133,10 @@ class Game():
         state["discard"] = self.discard_pile[:]
         state["last_play"] = self.last_play[:]
 
+        state["current_player"] = self.current_player
+
         return state
+
+    def set_alias(self, player, alias):
+        if player >= 0 and player <=2:
+            self.player_alias[player] = alias

@@ -80,6 +80,12 @@ class Backend():
                 # Raise a new Connection event!
                 is_on_start = True
 
+            # If key is 13, it is alias
+            elif key == 13:
+                alias_player = int(unpack[1])
+                alias = unpack[2]
+                self.game.set_alias(alias_player, alias)
+
             # Invalid Key
             else:
                 raise Exception()
@@ -103,6 +109,9 @@ class Backend():
     def give_state(self):
         # Gives up to date state of the board to UI
         return self.game.give_player_state(self.player_nb)
+
+    def set_alias(self, alias):
+        self.client.send(f"13;{self.player_nb};{alias}")
 
     def close(self):
         if self.client:
